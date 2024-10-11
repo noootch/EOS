@@ -8,7 +8,7 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
 from akkudoktoreos.class_sommerzeit import ist_dst_wechsel
-from akkudoktoreos.config import output_dir
+from akkudoktoreos.config import AppConfig
 
 matplotlib.use("Agg")
 
@@ -24,15 +24,21 @@ def visualisiere_ergebnisse(
     start_hour,
     prediction_hours,
     einspeiseverguetung_euro_pro_wh,
+    config: AppConfig,
     filename="visualization_results.pdf",
     extra_data=None,
 ):
     #####################
     # 24-hour visualization
     #####################
-    if not os.path.exists(output_dir):
+    output_dir = config.working_dir / config.directories.output
+    if output_dir.exists() and not output_dir.is_dir():
+        raise ValueError(f"Provided output path is not a directory: {output_dir}")
+    if not output_dir.exists():
+        print(f"Creating output directory: {output_dir}")
         os.makedirs(output_dir)
-    output_file = os.path.join(output_dir, filename)
+
+    output_file = output_dir.joinpath(filename)
     with PdfPages(output_file) as pdf:
         # Load and PV generation
         plt.figure(figsize=(14, 14))

@@ -1,9 +1,20 @@
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 from xprocess import ProcessStarter
+
+from akkudoktoreos.config import AppConfig, load_config
+
+
+@pytest.fixture(name="tmp_config")
+def load_config_tmp(tmp_path: Path) -> AppConfig:
+    "Creates an AppConfig from default.config.json with a tmp output directory."
+    config = load_config(tmp_path)
+    config.directories.output = tmp_path
+    return config
 
 
 @pytest.fixture

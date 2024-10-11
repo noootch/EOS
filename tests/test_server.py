@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import requests
 
-from akkudoktoreos.config import prediction_hours
+from akkudoktoreos.config import load_config
 
 
 def test_server(server):
@@ -9,4 +11,5 @@ def test_server(server):
     """
     result = requests.get(f"{server}/gesamtlast_simple?year_energy=2000&")
     assert result.status_code == 200
-    assert len(result.json()) == prediction_hours
+    config = load_config(Path.cwd())
+    assert len(result.json()) == config.eos.prediction_hours

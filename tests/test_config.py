@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
-from pydantic import ValidationError
+
 import pytest
+from pydantic import ValidationError
+
 from akkudoktoreos.config import (
     CONFIG_FILE_NAME,
     DEFAULT_CONFIG_FILE,

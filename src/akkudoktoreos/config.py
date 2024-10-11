@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
 import json
 import os
-from pathlib import Path
 import shutil
+from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Any, Optional
-from pydantic import BaseModel, ValidationError
 
+from pydantic import BaseModel, ValidationError
 
 CUSTOM_DIR = "EOS_USER_DIR"
 ENCODING = "UTF-8"
@@ -124,6 +124,9 @@ def load_config(
     working_dir: Path, copy_default: bool = False, update_outdated: bool = True
 ) -> AppConfig:
     "Load AppConfig from provided path or use default.config.json"
+    # make sure working_dir is always a full path
+    working_dir = working_dir.resolve()
+
     config = get_config_file(working_dir, copy_default)
     _merge_and_update(config, update_outdated)
 
