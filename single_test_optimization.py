@@ -264,6 +264,7 @@ parameter = {
 # Initialize the optimization problem using the default configuration
 working_dir = get_working_dir()
 config = load_config(working_dir)
+config.run_setup()
 opt_class = optimization_problem(config, verbose=True, fixed_seed=42)
 
 # Perform the optimisation based on the provided parameters and start hour

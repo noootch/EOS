@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, ValidationError
 
-CUSTOM_DIR = "EOS_USER_DIR"
+EOS_DIR = "EOS_DIR"
 ENCODING = "UTF-8"
 CONFIG_FILE_NAME = "EOS.config.json"
 DEFAULT_CONFIG_FILE = Path(__file__).parent.joinpath("default.config.json")
@@ -16,8 +16,8 @@ DEFAULT_CONFIG_FILE = Path(__file__).parent.joinpath("default.config.json")
 class FolderConfig(BaseModel):
     "Folder configuration"
 
-    output: Path
-    cache: Path
+    output: str
+    cache: str
 
 
 class EOSConfig(BaseModel):
@@ -40,6 +40,23 @@ class AppConfig(BaseConfig):
     "The app config."
 
     working_dir: Path
+
+    def run_setup(self) -> None:
+        "Run app setup."
+        print("Checking directory settings and creating missing directories...")
+        for key, value in self.directories.model_dump().items():
+            if not isinstance(value, str):
+                continue
+            path = self.working_dir / value
+            if path.is_dir():
+                print(f"'{key}': {path}")
+                continue
+            print(f"Creating directory '{key}': {path}")
+            os.makedirs(path, exist_ok=True)
+
+
+class SetupIncomplete(Exception):
+    "Class for all setup related exceptions"
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -142,7 +159,7 @@ def load_config(
 
 def get_working_dir() -> Path:
     "Get necessary paths for app startup."
-    custom_dir = os.getenv(CUSTOM_DIR)
+    custom_dir = os.getenv(EOS_DIR)
     if custom_dir is None:
         working_dir = Path.cwd()
         print(f"No custom directory provided. Setting working directory to: {working_dir}")

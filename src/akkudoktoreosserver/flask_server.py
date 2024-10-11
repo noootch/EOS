@@ -18,7 +18,12 @@ from akkudoktoreos.class_load_corrector import LoadPredictionAdjuster
 from akkudoktoreos.class_optimize import optimization_problem
 from akkudoktoreos.class_pv_forecast import PVForecast
 from akkudoktoreos.class_strompreis import HourlyElectricityPriceForecast
-from akkudoktoreos.config import get_start_enddate, get_working_dir, load_config
+from akkudoktoreos.config import (
+    SetupIncomplete,
+    get_start_enddate,
+    get_working_dir,
+    load_config,
+)
 
 app = Flask(__name__)
 
@@ -248,7 +253,7 @@ def get_pdf():
     # Endpoint to serve the generated PDF with visualization results
     output_path = config.working_dir / config.directories.output
     if not output_path.is_dir():
-        raise ValueError(f"Output path does not exist: {output_path}")
+        raise SetupIncomplete(f"Output path does not exist: {output_path}.")
     return send_from_directory(output_path, "visualization_results.pdf")
 
 
@@ -285,6 +290,8 @@ def root():
 
 if __name__ == "__main__":
     try:
+        config.run_setup()
+
         # Set host and port from environment variables or defaults
         host = os.getenv("FLASK_RUN_HOST", "0.0.0.0")
         port = os.getenv("FLASK_RUN_PORT", 8503)

@@ -23,9 +23,9 @@ A default configuration file `default.config.json` is provided. This file contai
 
 ### Custom Configuration
 
-Users can specify a custom configuration directory by setting the environment variable `EOS_USER_DIR`.
+Users can specify a custom configuration directory by setting the environment variable `EOS_DIR`.
 
-- If the directory specified by `EOS_USER_DIR` contains an existing `config.json` file, the application will use this configuration file.
+- If the directory specified by `EOS_DIR` contains an existing `config.json` file, the application will use this configuration file.
 - If the `config.json` file does not exist in the specified directory, the `default.config.json` file will be copied to the directory as `config.json`.
 
 ### Configuration Updates

@@ -61,3 +61,14 @@ def test_config_merge(tmp_path: Path) -> None:
 
     assert config.eos.optimization_hours == 30
     assert config.eos.penalty == 21
+
+
+def test_setup(tmp_path: Path) -> None:
+    "Test setup."
+
+    config = load_config(tmp_path, True)
+    config.run_setup()
+
+    assert tmp_path.joinpath(CONFIG_FILE_NAME).is_file()
+    assert tmp_path.joinpath(config.directories.cache).is_dir()
+    assert tmp_path.joinpath(config.directories.output).is_dir()

@@ -1,5 +1,4 @@
 import datetime
-import os
 
 # Set the backend for matplotlib to Agg
 import matplotlib
@@ -8,7 +7,7 @@ import numpy as np
 from matplotlib.backends.backend_pdf import PdfPages
 
 from akkudoktoreos.class_sommerzeit import ist_dst_wechsel
-from akkudoktoreos.config import AppConfig
+from akkudoktoreos.config import AppConfig, SetupIncomplete
 
 matplotlib.use("Agg")
 
@@ -32,11 +31,8 @@ def visualisiere_ergebnisse(
     # 24-hour visualization
     #####################
     output_dir = config.working_dir / config.directories.output
-    if output_dir.exists() and not output_dir.is_dir():
-        raise ValueError(f"Provided output path is not a directory: {output_dir}")
-    if not output_dir.exists():
-        print(f"Creating output directory: {output_dir}")
-        os.makedirs(output_dir)
+    if not output_dir.is_dir():
+        raise SetupIncomplete(f"Output path does not exist: {output_dir}.")
 
     output_file = output_dir.joinpath(filename)
     with PdfPages(output_file) as pdf:

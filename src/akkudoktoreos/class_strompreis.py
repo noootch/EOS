@@ -1,6 +1,5 @@
 import hashlib
 import json
-import os
 import zoneinfo
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -8,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import requests
 
-from akkudoktoreos.config import AppConfig
+from akkudoktoreos.config import AppConfig, SetupIncomplete
 
 
 def repeat_to_shape(array, target_shape):
@@ -28,8 +27,8 @@ class HourlyElectricityPriceForecast:
     def __init__(self, source: str | Path, config: AppConfig, charges=0.000228):  # 228
         self._cache_dir = config.working_dir / config.directories.cache
         if not self._cache_dir.is_dir():
-            print(f"Creating cache directory: {self._cache_dir}")
-            os.makedirs(self._cache_dir, exist_ok=True)
+            raise SetupIncomplete(f"Cache path does not exist: {self._cache_dir}.")
+
         self._cache_time_file = self._cache_dir / "cache_timestamp.txt"
         self.prices = self._load_data(source)
         self.charges = charges
