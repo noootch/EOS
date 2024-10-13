@@ -1,3 +1,15 @@
+"""
+This module provides functionality to manage and handle configuration for the EOS system,
+including loading, merging, and validating JSON configuration files. It also provides
+utility functions for working directory setup and date handling.
+
+Key features:
+- Loading and merging configurations from default or custom JSON files
+- Validating configurations using Pydantic models
+- Managing directory setups for the application
+- Utility to get prediction start and end dates
+"""
+
 import json
 import os
 import shutil
@@ -14,14 +26,32 @@ DEFAULT_CONFIG_FILE = Path(__file__).parent.joinpath("default.config.json")
 
 
 class FolderConfig(BaseModel):
-    "Folder configuration"
+    """
+    Folder configuration for the EOS system.
+
+    Uses working_dir as root path.
+    The working directory can be either cwd or
+    a path or folder defined by the EOS_DIR environment variable.
+
+    Attributes:
+        output (str): Directory name for output files.
+        cache (str): Directory name for cache files.
+    """
 
     output: str
     cache: str
 
 
 class EOSConfig(BaseModel):
-    "EOS dependent config"
+    """
+    EOS system-specific configuration.
+
+    Attributes:
+        prediction_hours (int): Number of hours for predictions.
+        optimization_hours (int): Number of hours for optimizations.
+        penalty (int): Penalty factor used in optimization.
+        available_charging_rates_in_percentage (list[float]): List of available charging rates as percentages.
+    """
 
     prediction_hours: int
     optimization_hours: int
@@ -30,41 +60,80 @@ class EOSConfig(BaseModel):
 
 
 class BaseConfig(BaseModel):
-    "The base configuration."
+    """
+    Base configuration for the EOS system.
+
+    Attributes:
+        directories (FolderConfig): Configuration for directory paths (output, cache).
+        eos (EOSConfig): Configuration for EOS-specific settings.
+    """
 
     directories: FolderConfig
     eos: EOSConfig
 
 
 class AppConfig(BaseConfig):
-    "The app config."
+    """
+    Application-level configuration that extends the base configuration with a working directory.
+
+    Attributes:
+        working_dir (Path): The root directory for the application.
+    """
 
     working_dir: Path
 
     def run_setup(self) -> None:
-        "Run app setup."
+        """
+        Runs setup for the application by ensuring that required directories exist.
+        If a directory does not exist, it is created.
+
+        Raises:
+            OSError: If directories cannot be created.
+        """
         print("Checking directory settings and creating missing directories...")
         for key, value in self.directories.model_dump().items():
             if not isinstance(value, str):
                 continue
             path = self.working_dir / value
-            if path.is_dir():
-                print(f"'{key}': {path}")
-                continue
-            print(f"Creating directory '{key}': {path}")
+            print(f"'{key}': {path}")
             os.makedirs(path, exist_ok=True)
 
 
 class SetupIncomplete(Exception):
-    "Class for all setup related exceptions"
+    """
+    Exception class for errors related to incomplete setup of the EOS system.
+    """
 
 
 def _load_json(path: Path) -> dict[str, Any]:
+    """
+    Load a JSON file from a given path.
+
+    Args:
+        path (Path): Path to the JSON file.
+
+    Returns:
+        dict[str, Any]: Parsed JSON content.
+
+    Raises:
+        FileNotFoundError: If the JSON file does not exist.
+        json.JSONDecodeError: If the file cannot be parsed as valid JSON.
+    """
     with path.open("r") as f_in:
         return json.load(f_in)
 
 
 def _merge_json(default_data: dict[str, Any], custom_data: dict[str, Any]) -> dict[str, Any]:
+    """
+    Recursively merge two dictionaries, using values from `custom_data` when available.
+
+    Args:
+        default_data (dict[str, Any]): The default configuration values.
+        custom_data (dict[str, Any]): The custom configuration values.
+
+    Returns:
+        dict[str, Any]: Merged configuration data.
+    """
     merged_data = {}
     for key, default_value in default_data.items():
         if key in custom_data:
@@ -82,6 +151,16 @@ def _merge_json(default_data: dict[str, Any], custom_data: dict[str, Any]) -> di
 
 
 def _config_update_available(merged_data: dict[str, Any], custom_data: dict[str, Any]) -> bool:
+    """
+    Check if the configuration needs to be updated by comparing merged data and custom data.
+
+    Args:
+        merged_data (dict[str, Any]): The merged configuration data.
+        custom_data (dict[str, Any]): The custom configuration data.
+
+    Returns:
+        bool: True if there is a difference indicating that an update is needed, otherwise False.
+    """
     if merged_data.keys() != custom_data.keys():
         return True
 
@@ -98,7 +177,16 @@ def _config_update_available(merged_data: dict[str, Any], custom_data: dict[str,
 
 
 def get_config_file(path: Path, copy_default: bool) -> Path:
-    "Get the valid config file path."
+    """
+    Get the valid configuration file path. If the custom config is not found, it uses the default config.
+
+    Args:
+        path (Path): Path to the working directory.
+        copy_default (bool): If True, copy the default configuration if custom config is not found.
+
+    Returns:
+        Path: Path to the valid configuration file.
+    """
     config = path.resolve() / CONFIG_FILE_NAME
     if config.is_file():
         print(f"Using configuration from: {config}")
@@ -120,6 +208,16 @@ def get_config_file(path: Path, copy_default: bool) -> Path:
 
 
 def _merge_and_update(custom_config: Path, update_outdated: bool = False) -> bool:
+    """
+    Merge custom and default configurations, and optionally update the custom config if outdated.
+
+    Args:
+        custom_config (Path): Path to the custom configuration file.
+        update_outdated (bool): If True, update the custom config if it is outdated.
+
+    Returns:
+        bool: True if the custom config was updated, otherwise False.
+    """
     if custom_config == DEFAULT_CONFIG_FILE:
         return False
     default_data = _load_json(DEFAULT_CONFIG_FILE)
@@ -140,7 +238,20 @@ def _merge_and_update(custom_config: Path, update_outdated: bool = False) -> boo
 def load_config(
     working_dir: Path, copy_default: bool = False, update_outdated: bool = True
 ) -> AppConfig:
-    "Load AppConfig from provided path or use default.config.json"
+    """
+    Load the application configuration from the specified directory, merging with defaults if needed.
+
+    Args:
+        working_dir (Path): Path to the working directory.
+        copy_default (bool): Whether to copy the default configuration if custom config is missing.
+        update_outdated (bool): Whether to update outdated custom configuration.
+
+    Returns:
+        AppConfig: Loaded application configuration.
+
+    Raises:
+        ValueError: If the configuration is incomplete or not valid.
+    """
     # make sure working_dir is always a full path
     working_dir = working_dir.resolve()
 
@@ -158,7 +269,12 @@ def load_config(
 
 
 def get_working_dir() -> Path:
-    "Get necessary paths for app startup."
+    """
+    Get the working directory for the application, either from an environment variable or the current working directory.
+
+    Returns:
+        Path: The path to the working directory.
+    """
     custom_dir = os.getenv(EOS_DIR)
     if custom_dir is None:
         working_dir = Path.cwd()
@@ -172,9 +288,16 @@ def get_working_dir() -> Path:
 def get_start_enddate(
     prediction_hours: int, startdate: Optional[datetime] = None
 ) -> tuple[str, str]:
-    ############
-    # Parameter
-    ############
+    """
+    Calculate the start and end dates based on the given prediction hours and optional start date.
+
+    Args:
+        prediction_hours (int): Number of hours for predictions.
+        startdate (Optional[datetime]): Optional starting datetime.
+
+    Returns:
+        tuple[str, str]: The current date (start date) and end date in the format 'YYYY-MM-DD'.
+    """
     if startdate is None:
         date = (datetime.now().date() + timedelta(hours=prediction_hours)).strftime("%Y-%m-%d")
         date_now = datetime.now().strftime("%Y-%m-%d")
